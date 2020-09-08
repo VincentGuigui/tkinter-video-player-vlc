@@ -4,6 +4,17 @@ Author: Vincent Guigui
 Based on: https://git.videolan.org/?p=vlc/bindings/python.git;a=blob_plain;f=examples/tkvlc.py;hb=HEAD
     by Patrick Fay 
 Date: 08/09/2020
+
+Description:
+Here is a short sample on how to use VLC video player on Python with tKinter.
+It should work on Windows, Linux, MacOS
+
+In this sample:
+- the same video is played independently on 2 different Tkinter canvas
+- each video has a video transform filter applied: 90° or 270° rotation
+- one of the video is muted
+- one of the video has an inverted color filter
+
 """
 import tkinter as tk
 from PIL import Image, ImageTk
@@ -11,7 +22,7 @@ import vlc
 import platform
 
 class VideoPlayer:  
-    def start_video(self, canvas, video_path, angle):
+    def start_video(self, canvas, video_path, angle, mute, invert):
         self.isMacOS   = platform.system().lower().startswith('darwin')
         self.isWindows = platform.system().lower().startswith('win')
         self.isLinux   = platform.system().lower().startswith('linux')
@@ -20,7 +31,12 @@ class VideoPlayer:
         print(f'Starting VLC on Mac:{self.isMacOS} Windows:{self.isWindows} Linux:{self.isLinux}')
 
         # VLC player options
-        args = [f'--video-filter=transform{{type={angle}}}']
+        if invert:
+            args = [f'--video-filter=transform{{type={angle}}}:invert']
+        else:
+            args = [f'--video-filter=transform{{type={angle}}}']
+        if mute:
+            args.append('--noaudio')
         if self.isLinux:
             args.append('--no-xlib')
         self.Instance = vlc.Instance(args)
@@ -41,14 +57,19 @@ class VideoPlayer:
                 self.player.set_xwindow(h)  # plays audio, no video
         else:
             self.player.set_xwindow(h) 
+        # set_mute will mute all VLC instance
+        #   self.player.audio_set_mute(mute)
+        # it is better/more efficient to disable the audio track (see Instance constructor)
         self.player.play()
-        
+
 root = tk.Tk()
 canvas1 = tk.Canvas(root, width=500, height=500)
 canvas1.pack(side=tk.LEFT)
 canvas2 = tk.Canvas(root, width=500, height=500)
 canvas2.pack(side=tk.LEFT)
 player = VideoPlayer()
-player.start_video(canvas1, '../../media/60 seconds to understand artificial intelligence.mp4', 90)
-player.start_video(canvas2, '../../media/60 seconds to understand artificial intelligence.mp4', 270)
+# Audio, 90° rotation, inverted color
+player.start_video(canvas1, 'sample.mp4', 90, False, True)
+# No Audio, 270°/-90° rotation, normal color
+player.start_video(canvas2, 'sample.mp4', 270, True, False)
 root.mainloop()
