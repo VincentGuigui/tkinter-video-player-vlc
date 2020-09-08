@@ -1,6 +1,6 @@
 # Description 
 Here is a short sample on how to use VLC video player on Python with tKinter.
-It should work on Windows, Linux, MacOS
+It should work on Windows, Linux, MacOS.
 
 In this sample:
 - the same video is played independently on 2 different Tkinter canvas
