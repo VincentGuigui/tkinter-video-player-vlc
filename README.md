@@ -1,5 +1,5 @@
 # tkinter-video-player-vlc
-Here is a short sample on how to use VLC video player on Pyhton and tKinter
+Here is a short sample on how to use VLC video player on Python and Tkinter
 
 In this sample:
 - the same video is played independently on 2 different Tkinter canvas
