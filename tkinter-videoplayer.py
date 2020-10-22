@@ -28,6 +28,34 @@ class VideoPlayer:
         self.isLinux   = platform.system().lower().startswith('linux')
         self.canvas = canvas
 
+        if self.isMacOS:
+            from ctypes import c_void_p, cdll
+            # libtk = cdll.LoadLibrary(ctypes.util.find_library('tk'))
+            # returns the tk library /usr/lib/libtk.dylib from macOS,
+            # but we need the tkX.Y library bundled with Python 3+,
+            # to match the version number of tkinter, _tkinter, etc.
+            try:
+                libtk = 'libtk%s.dylib' % (Tk.TkVersion,)
+                prefix = getattr(sys, 'base_prefix', sys.prefix)
+                libtk = joined(prefix, 'lib', libtk)
+                dylib = cdll.LoadLibrary(libtk)
+                # getNSView = dylib.TkMacOSXDrawableView is the
+                # proper function to call, but that is non-public
+                # (in Tk source file macosx/TkMacOSXSubwindows.c)
+                # and dylib.TkMacOSXGetRootControl happens to call
+                # dylib.TkMacOSXDrawableView and return the NSView
+                _GetNSView = dylib.TkMacOSXGetRootControl
+                # C signature: void *_GetNSView(void *drawable) to get
+                # the Cocoa/Obj-C NSWindow.contentView attribute, the
+                # drawable NSView object of the (drawable) NSWindow
+                _GetNSView.restype = c_void_p
+                _GetNSView.argtypes = c_void_p,
+                del dylib
+
+            except (NameError, OSError):  # image or symbol not found
+                def _GetNSView(unused):
+                    return None
+
         print(f'Starting VLC on Mac:{self.isMacOS} Windows:{self.isWindows} Linux:{self.isLinux}')
 
         # VLC player options
