@@ -21,11 +21,17 @@ from PIL import Image, ImageTk
 import vlc
 import platform
 
-class VideoPlayer:  
-    def start_video(self, canvas, video_path, angle, mute, invert):
-        self.isMacOS   = platform.system().lower().startswith('darwin')
+
+class VideoPlayer:
+    def __init__(self):
+        self.isMacOS = platform.system().lower().startswith('darwin')
         self.isWindows = platform.system().lower().startswith('win')
-        self.isLinux   = platform.system().lower().startswith('linux')
+        self.isLinux = platform.system().lower().startswith('linux')
+        self.canvas = None
+        self.instance = None
+        self.player = None
+
+    def start_video(self, canvas, video_path, angle, mute, invert):
         self.canvas = canvas
 
         if self.isMacOS:
@@ -44,12 +50,12 @@ class VideoPlayer:
                 # (in Tk source file macosx/TkMacOSXSubwindows.c)
                 # and dylib.TkMacOSXGetRootControl happens to call
                 # dylib.TkMacOSXDrawableView and return the NSView
-                _GetNSView = dylib.TkMacOSXGetRootControl
+                self.getNSView = dylib.TkMacOSXGetRootControl
                 # C signature: void *_GetNSView(void *drawable) to get
                 # the Cocoa/Obj-C NSWindow.contentView attribute, the
                 # drawable NSView object of the (drawable) NSWindow
-                _GetNSView.restype = c_void_p
-                _GetNSView.argtypes = c_void_p,
+                self.getNSView.restype = c_void_p
+                self.getNSView.argtypes = c_void_p,
                 del dylib
 
             except (NameError, OSError):  # image or symbol not found
@@ -67,28 +73,29 @@ class VideoPlayer:
             args.append('--noaudio')
         if self.isLinux:
             args.append('--no-xlib')
-        self.Instance = vlc.Instance(args)
+        self.instance = vlc.Instance(args)
         self.player = self.Instance.media_player_new()
 
         m = self.Instance.media_new(str(video_path))  # Path, unicode
         self.player.set_media(m)
 
         # set the window id where to render VLC's video output
-        h = self.canvas.winfo_id()
+        w_id = self.canvas.winfo_id()
         if self.isWindows:
-            self.player.set_hwnd(h)
+            self.player.set_hwnd(w_id)
         elif self.isMacOS:
-            v = _GetNSView(h)
+            v = self.getNSView(w_id)
             if v:
                 self.player.set_nsobject(v)
             else:
-                self.player.set_xwindow(h)  # plays audio, no video
+                self.player.set_xwindow(w_id)  # plays audio, no video
         else:
-            self.player.set_xwindow(h) 
-        # set_mute will mute all VLC instance
+            self.player.set_xwindow(w_id)
+            # set_mute will mute all VLC instance
         #   self.player.audio_set_mute(mute)
         # it is better/more efficient to disable the audio track (see Instance constructor)
         self.player.play()
+
 
 root = tk.Tk()
 canvas1 = tk.Canvas(root, width=500, height=500)
